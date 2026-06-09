@@ -1,0 +1,22 @@
+
+langchain
+langchain-core
+langchain-community
+langchain-huggingface
+langchain-experimental
+rank_bm25
+
+# Hugging Face Utilities
+huggingface_hub
+transformers
+sentence-transformers
+
+chromadb
+pypdf
+faiss-cpu
+
+
+# Environment & Utilities
+python-dotenv
+numpy
+scikit-learn
