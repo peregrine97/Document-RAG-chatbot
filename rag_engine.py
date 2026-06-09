@@ -57,7 +57,7 @@ class RAGengine:
         self.bm25_retriever = BM25Retriever.from_documents(documents=self.chunks)
         self.bm25_retriever.k=10
 
-        self.compressor = FlashrankRerank(model="ms-marco-MultiBERT-L-12")
+        # self.compressor = FlashrankRerank(model="ms-marco-MultiBERT-L-12")
 
 
     def generate_hypothetical_answer(self,query):
@@ -84,8 +84,9 @@ class RAGengine:
 
         final_combined_docs = list(unique_docs.values())
 
-        final_docs = self.compressor.compress_documents(final_combined_docs,query)
-        return final_docs[:5]
+        # final_docs = self.compressor.compress_documents(final_combined_docs,query)
+        final_docs = final_combined_docs
+        return final_docs
     
     def generate_response(self,query,history=None):
         best_chunks = self.advance_retrieve(query)
