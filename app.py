@@ -3,6 +3,12 @@ from rag_engine import RAGengine
 import time
 import os
 
+def load_engine(pdf_bytes):
+    with open("temp.pdf", "wb") as f:
+        f.write(pdf_bytes)
+
+    return RAGengine("temp.pdf")
+
 #page-configuration
 st.set_page_config(page_title="RAG research assistant",layout="wide")#shows the name in the browser tab
 st.title("Document Based Chatbot")
@@ -21,13 +27,12 @@ if st.sidebar.button("clear chat"):
 if uploaded_file:
     if("current_pdf" not in st.session_state or st.session_state.current_pdf!=uploaded_file.name):
         with st.sidebar.spinner("Ingesting the document...."):
-            with open("temp.pdf","wb") as f:
-                f.write(uploaded_file.getbuffer())
+            pdf_bytes = uploaded_file.getvalue()
+            st.session_state.engine = load_engine(pdf_bytes)
 
-        
-            st.session_state.engine = RAGengine(pdf_path="temp.pdf")
             st.session_state.current_pdf = uploaded_file.name
             st.session_state.messages = []
+
             st.sidebar.success("Document Ingested")
 
 #chat-display logic 

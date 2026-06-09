@@ -1,27 +1,32 @@
+import streamlit as st
+
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import CharacterTextSplitter,RecursiveCharacterTextSplitter
-from langchain_experimental.text_splitter import SemanticChunker
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEndpoint,ChatHuggingFace
 from dotenv import load_dotenv
-from flashrank import Ranker
-from langchain_community.document_compressors import FlashrankRerank
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
+@st.cache_resource
+def load_embeddings():
+    return HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
+
+@st.cache_resource
+def load_llm():
+    llm = HuggingFaceEndpoint(
+        repo_id="meta-llama/Meta-Llama-3-8B-Instruct",
+        task="text-generation"
+    )
+    return ChatHuggingFace(llm=llm)
+
 load_dotenv()
 
-llm = HuggingFaceEndpoint(
-    repo_id='meta-llama/Meta-Llama-3-8B-Instruct',
-    task='text-generation',
-)
-
-global_model = ChatHuggingFace(llm = llm)
-
-embeddings = HuggingFaceEmbeddings(model='sentence-transformers/all-MiniLM-L6-v2')
 
 class RAGengine:
     def __init__(self,pdf_path,model=None):
@@ -33,12 +38,13 @@ class RAGengine:
         for doc in documents:
             self.docs.append(doc)
 
-        self.embeddings = HuggingFaceEmbeddings(model='sentence-transformers/all-MiniLM-L6-v2')
-        self.model = global_model if model is None else model
+        self.embeddings = load_embeddings()
+        self.model = load_llm() if model is None else model
 
-        text_splitter = SemanticChunker(
-            self.embeddings,breakpoint_threshold_type='percentile'
-        )
+        text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1000,
+                chunk_overlap=200
+            )
 
         self.chunks = text_splitter.split_documents(self.docs)
         
@@ -51,11 +57,11 @@ class RAGengine:
 
         self.retriever = self.vector_store.as_retriever(
             search_type="similarity",
-            search_kwargs={"k":10}
+            search_kwargs={"k":4}
         )
 
         self.bm25_retriever = BM25Retriever.from_documents(documents=self.chunks)
-        self.bm25_retriever.k=10
+        self.bm25_retriever.k=4
 
         # self.compressor = FlashrankRerank(model="ms-marco-MultiBERT-L-12")
 
@@ -119,7 +125,7 @@ class RAGengine:
 
                         Provide a detailed explanation.
                         When possible:
-                        - Explain the concept in 2-4 paragraphs.
+                        - Explain the concept in 1-2 paragraphs and cite important information pointwise wherever needed .
                         - Include important features, components, objectives, and applications.
                         - Summarize key points from the context.
                         - Do not make up information.
